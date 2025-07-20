@@ -3,160 +3,198 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AWS Legal Consultancy Pomodoro</title>
+  <title>AWS Legal Consultancy 🍅 TomʌɪDos</title>
   <style>
     body {
+      font-family: Arial, sans-serif;
       background-color: #092143;
       color: white;
-      font-family: 'Segoe UI', sans-serif;
       text-align: center;
+      margin: 0;
       padding: 20px;
     }
-    .timer {
-      font-size: 80px;
-      margin: 20px 0;
+    .container {
+      max-width: 800px;
+      margin: auto;
     }
-    .buttons button, .task-controls button {
-      background-color: #5b8ab0;
-      color: #092143;
-      border: none;
-      padding: 10px 20px;
+    h1 { margin-bottom: 5px; }
+    #sessionLabel {
+      margin-top: 0;
+      font-weight: normal;
+      color: #b0c4de;
+    }
+    .timer { font-size: 64px; margin: 20px 0; }
+    .controls button {
       margin: 5px;
-      cursor: pointer;
-      border-radius: 5px;
-      font-weight: bold;
-    }
-    input[type="text"] {
-      padding: 10px;
-      width: 200px;
-      border-radius: 4px;
+      padding: 10px 20px;
+      font-size: 16px;
       border: none;
+      border-radius: 5px;
+      cursor: pointer;
     }
+    #focusBtn { background-color: #007bff; color: white; }
+    #shortBreakBtn { background-color: #28a745; color: white; }
+    #longBreakBtn { background-color: #6c757d; color: white; }
+    #resetBtn { background-color: #dc3545; color: white; }
     table {
-      margin: 20px auto;
+      width: 100%;
       border-collapse: collapse;
-      width: 90%;
-      color: white;
+      margin-top: 20px;
     }
     th, td {
-      padding: 12px;
+      padding: 10px;
       border: 1px solid white;
+    }
+    .progressBar {
+      width: 100%;
+      background-color: #e0e0e0;
+      height: 10px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+    .progressBarFill {
+      height: 100%;
+      background-color: #17a2b8;
+      width: 0%;
+      transition: width 0.5s ease-in-out;
+    }
+    #downloadBtn {
+      background-color: #ffc107;
+      color: #000;
+      margin-top: 20px;
+    }
+    .dark-toggle {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: #fff;
+      color: #000;
+      padding: 5px 10px;
+      border-radius: 5px;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
-  <h1>AWS Legal Consultancy Pomodoro</h1>
-
-  <div class="timer" id="timer">25:00</div>
-  <div class="buttons">
-    <button onclick="startTimer()">Start</button>
-    <button onclick="resetTimer()">Reset</button>
+  <div class="dark-toggle" onclick="toggleTheme()">Toggle Theme</div>
+  <div class="container">
+    <p style="font-size:10px; color:rgba(255,255,255,0.2); text-align:right; margin-top:10px;">
+  D.
+</p>
+    <h1>🍅 TomʌɪDos</h1>
+    <p id="sessionLabel">The Promodoro Technique</p>
+    <div class="timer" id="timer">25:00</div>
+    <div class="controls">
+      <button id="focusBtn" onclick="startTimer(25, 'Focus Session')">Focus</button>
+      <button id="shortBreakBtn" onclick="startTimer(5, 'Short Break')">Short Break</button>
+      <button id="longBreakBtn" onclick="startTimer(15, 'Long Break')">Long Break</button>
+      <button id="resetBtn" onclick="resetTimer()">Reset</button>
+    </div>
+    <div class="progressBar">
+      <div class="progressBarFill" id="progressFill"></div>
+    </div>
+    <table id="taskTable">
+      <thead>
+        <tr>
+          <th>Task</th>
+          <th>Action</th>
+          <th>Status</th>
+          <th>❌</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><input type="text" placeholder="Type task"></td>
+          <td><input type="text" placeholder="Type action"></td>
+          <td>Pending</td>
+          <td><button onclick="deleteRow(this)">🗑️</button></td>
+        </tr>
+      </tbody>
+    </table>
+    <button onclick="addRow()">➕ Add Task</button>
+    <button id="downloadBtn" onclick="downloadExcel()">📥 Download Excel</button>
   </div>
-
-  <h2>Task Manager</h2>
-  <input type="text" id="taskInput" placeholder="Enter a task...">
-  <button onclick="addTask()">Add Task</button>
-
-  <div class="task-controls">
-    <button id="clearTasks">Clear All</button>
-    <button id="downloadTasks">Download Tasks</button>
-  </div>
-
-  <table>
-    <thead>
-      <tr><th>Case/Task</th><th>Status</th><th>Action</th></tr>
-    </thead>
-    <tbody id="taskTableBody"></tbody>
-  </table>
+  <audio id="alertSound" src="https://www.soundjay.com/buttons/sounds/beep-07.mp3"></audio>
 
   <script>
-    let timer;
-    let time = 25 * 60;
-    let running = false;
+    let timerInterval, timeLeft, totalTime;
 
-    function startTimer() {
-      if (!running) {
-        running = true;
-        timer = setInterval(() => {
-          if (time <= 0) {
-            clearInterval(timer);
-            running = false;
-            alert('Pomodoro complete!');
-            return;
-          }
-          time--;
-          displayTime();
-        }, 1000);
-      }
+    function startTimer(minutes, label) {
+      clearInterval(timerInterval);
+      totalTime = minutes * 60;
+      timeLeft = totalTime;
+      document.getElementById('sessionLabel').innerText = label;
+      updateTimerDisplay();
+      timerInterval = setInterval(() => {
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          document.getElementById('alertSound').play();
+          autoMarkDone();
+          return;
+        }
+        timeLeft--;
+        updateTimerDisplay();
+      }, 1000);
     }
 
     function resetTimer() {
-      clearInterval(timer);
-      time = 25 * 60;
-      running = false;
-      displayTime();
+      clearInterval(timerInterval);
+      document.getElementById('timer').innerText = '25:00';
+      document.getElementById('sessionLabel').innerText = 'Focus Session';
+      document.getElementById('progressFill').style.width = '0%';
     }
 
-    function displayTime() {
-      const minutes = String(Math.floor(time / 60)).padStart(2, '0');
-      const seconds = String(time % 60).padStart(2, '0');
-      document.getElementById("timer").innerText = `${minutes}:${seconds}`;
+    function updateTimerDisplay() {
+      let minutes = Math.floor(timeLeft / 60);
+      let seconds = timeLeft % 60;
+      document.getElementById('timer').innerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      document.getElementById('progressFill').style.width = `${((totalTime - timeLeft) / totalTime) * 100}%`;
     }
 
-    // Task system
-    const taskInput = document.getElementById("taskInput");
-    const taskTableBody = document.getElementById("taskTableBody");
-
-    function addTask() {
-      const text = taskInput.value.trim();
-      if (!text) return;
-      const tasks = JSON.parse(localStorage.getItem("tasks")) || [];
-      tasks.push({ text, done: false });
-      localStorage.setItem("tasks", JSON.stringify(tasks));
-      taskInput.value = "";
-      renderTasks();
+    function addRow() {
+      const row = document.createElement('tr');
+      row.innerHTML = `<td><input type="text" placeholder="Type task"></td>
+                       <td><input type="text" placeholder="Type action"></td>
+                       <td>Pending</td>
+                       <td><button onclick="deleteRow(this)">🗑️</button></td>`;
+      document.querySelector('#taskTable tbody').appendChild(row);
     }
 
-    function deleteTask(index) {
-      const tasks = JSON.parse(localStorage.getItem("tasks")) || [];
-      tasks.splice(index, 1);
-      localStorage.setItem("tasks", JSON.stringify(tasks));
-      renderTasks();
+    function deleteRow(btn) {
+      btn.parentElement.parentElement.remove();
     }
 
-    function renderTasks() {
-      const tasks = JSON.parse(localStorage.getItem("tasks")) || [];
-      taskTableBody.innerHTML = "";
-      tasks.forEach((task, index) => {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td>${task.text}</td>
-          <td>${task.done ? '✅ Done' : '⏳ Pending'}</td>
-          <td><button onclick="deleteTask(${index})">❌</button></td>
-        `;
-        taskTableBody.appendChild(row);
+    function autoMarkDone() {
+      const rows = document.querySelectorAll('#taskTable tbody tr');
+      rows.forEach(row => {
+        const statusCell = row.children[2];
+        if (statusCell.innerText === 'Pending') statusCell.innerText = 'Done';
       });
     }
 
-    document.getElementById("clearTasks").addEventListener("click", () => {
-      localStorage.removeItem("tasks");
-      taskTableBody.innerHTML = "";
-    });
-
-    document.getElementById("downloadTasks").addEventListener("click", () => {
-      const tasks = JSON.parse(localStorage.getItem("tasks")) || [];
-      const csv = "data:text/csv;charset=utf-8," + tasks.map(t => t.text).join("\n");
-      const link = document.createElement("a");
-      link.setAttribute("href", encodeURI(csv));
-      link.setAttribute("download", "legal_tasks.csv");
-      document.body.appendChild(link);
+    function downloadExcel() {
+      let csv = 'Task,Action,Status\n';
+      document.querySelectorAll('#taskTable tbody tr').forEach(row => {
+        const cells = row.querySelectorAll('td');
+        const task = cells[0].querySelector('input')?.value || '';
+        const action = cells[1].querySelector('input')?.value || '';
+        const status = cells[2].innerText;
+        csv += `${task},${action},${status}\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'legal-pomodoro-tasks.csv';
       link.click();
-      document.body.removeChild(link);
-    });
+    }
 
-    // Load on page load
-    renderTasks();
-    displayTime();
+    function toggleTheme() {
+      const body = document.body;
+      body.style.backgroundColor = body.style.backgroundColor === 'white' ? '#092143' : 'white';
+      body.style.color = body.style.color === 'black' ? 'white' : 'black';
+    }
   </script>
 </body>
 </html>
