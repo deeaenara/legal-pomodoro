@@ -2,161 +2,161 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>AWS Legal Consultancy Pomodoro</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Legal Pomodoro Pro</title>
   <style>
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background-color: #092143;
       color: white;
+      font-family: 'Segoe UI', sans-serif;
       text-align: center;
-      padding: 50px;
+      padding: 20px;
     }
-    h1 {
-      margin-bottom: 20px;
-    }
-    #timer {
-      font-size: 60px;
+    .timer {
+      font-size: 80px;
       margin: 20px 0;
     }
-    .button {
-      background-color: #fff;
+    .buttons button, .task-controls button {
+      background-color: #5b8ab0;
       color: #092143;
-      padding: 10px 25px;
-      margin: 10px;
       border: none;
-      border-radius: 8px;
-      font-weight: bold;
+      padding: 10px 20px;
+      margin: 5px;
       cursor: pointer;
-      font-size: 16px;
-    }
-    .task-section {
-      margin-top: 40px;
+      border-radius: 5px;
+      font-weight: bold;
     }
     input[type="text"] {
-      padding: 8px;
-      font-size: 14px;
-      border-radius: 6px;
+      padding: 10px;
+      width: 200px;
+      border-radius: 4px;
       border: none;
-      margin-right: 10px;
     }
-    ul {
-      list-style: none;
-      padding: 0;
+    table {
+      margin: 20px auto;
+      border-collapse: collapse;
+      width: 90%;
+      color: white;
     }
-    li {
-      margin: 5px 0;
-    }
-    .remove {
-      margin-left: 15px;
-      color: #ff7373;
-      cursor: pointer;
+    th, td {
+      padding: 12px;
+      border: 1px solid white;
     }
   </style>
 </head>
 <body>
-  <h1>Aws Legal Consultancy Pomodoro</h1>
-  <div id="modeLabel">Billable Sprint (25:00)</div>
-  <div id="timer">25:00</div>
-  <button class="button" onclick="startTimer()">Start Billable Sprint</button>
-  <button class="button" onclick="startBreak()">Adjourn (Break)</button>
-  <button class="button" onclick="resetTimer()">Reset Docket</button>
-  <button class="button" onclick="toggleMode()">Switch to 50/10</button>
+  <h1>Legal Pomodoro Pro</h1>
 
-  <div class="task-section">
-    <h3>Active Case Files</h3>
-    <input type="text" id="taskInput" placeholder="Add a case or task...">
-    <button class="button" onclick="addTask()">Add</button>
-    <ul id="taskList"></ul>
+  <div class="timer" id="timer">25:00</div>
+  <div class="buttons">
+    <button onclick="startTimer()">Start</button>
+    <button onclick="resetTimer()">Reset</button>
   </div>
 
-  <audio id="alarm" src="https://notificationsounds.com/notification-sounds/eventually-590/download/mp3"></audio>
+  <h2>Task Manager</h2>
+  <input type="text" id="taskInput" placeholder="Enter a task...">
+  <button onclick="addTask()">Add Task</button>
+
+  <div class="task-controls">
+    <button id="clearTasks">Clear All</button>
+    <button id="downloadTasks">Download Tasks</button>
+  </div>
+
+  <table>
+    <thead>
+      <tr><th>Case/Task</th><th>Status</th><th>Action</th></tr>
+    </thead>
+    <tbody id="taskTableBody"></tbody>
+  </table>
 
   <script>
-    let isRunning = false;
-    let isBreak = false;
-    let interval;
-    let duration = 25 * 60;
-    let timeLeft = duration;
-    let usingLongMode = false;
-
-    function updateDisplay() {
-      const minutes = Math.floor(timeLeft / 60);
-      const seconds = timeLeft % 60;
-      document.getElementById("timer").innerText = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-    }
+    let timer;
+    let time = 25 * 60;
+    let running = false;
 
     function startTimer() {
-      if (isRunning) return;
-      isRunning = true;
-      isBreak = false;
-      document.getElementById("modeLabel").innerText = usingLongMode ? "Deep Focus Mode (50:00)" : "Billable Sprint (25:00)";
-      interval = setInterval(() => {
-        if (timeLeft <= 0) {
-          clearInterval(interval);
-          document.getElementById("alarm").play();
-          autoBreak();
-        } else {
-          timeLeft--;
-          updateDisplay();
-        }
-      }, 1000);
-    }
-
-    function startBreak() {
-      clearInterval(interval);
-      isRunning = true;
-      isBreak = true;
-      document.getElementById("modeLabel").innerText = "Adjournment (5:00)";
-      timeLeft = 5 * 60;
-      updateDisplay();
-      interval = setInterval(() => {
-        if (timeLeft <= 0) {
-          clearInterval(interval);
-          document.getElementById("alarm").play();
-          resetTimer();
-        } else {
-          timeLeft--;
-          updateDisplay();
-        }
-      }, 1000);
-    }
-
-    function autoBreak() {
-      setTimeout(() => {
-        startBreak();
-      }, 500);
+      if (!running) {
+        running = true;
+        timer = setInterval(() => {
+          if (time <= 0) {
+            clearInterval(timer);
+            running = false;
+            alert('Pomodoro complete!');
+            return;
+          }
+          time--;
+          displayTime();
+        }, 1000);
+      }
     }
 
     function resetTimer() {
-      clearInterval(interval);
-      isRunning = false;
-      isBreak = false;
-      timeLeft = usingLongMode ? 50 * 60 : 25 * 60;
-      document.getElementById("modeLabel").innerText = usingLongMode ? "Deep Focus Mode (50:00)" : "Billable Sprint (25:00)";
-      updateDisplay();
+      clearInterval(timer);
+      time = 25 * 60;
+      running = false;
+      displayTime();
     }
 
-    function toggleMode() {
-      usingLongMode = !usingLongMode;
-      resetTimer();
-      document.querySelector(".button[onclick='toggleMode()']").innerText = usingLongMode ? "Switch to 25/5" : "Switch to 50/10";
+    function displayTime() {
+      const minutes = String(Math.floor(time / 60)).padStart(2, '0');
+      const seconds = String(time % 60).padStart(2, '0');
+      document.getElementById("timer").innerText = `${minutes}:${seconds}`;
     }
+
+    // Task system
+    const taskInput = document.getElementById("taskInput");
+    const taskTableBody = document.getElementById("taskTableBody");
 
     function addTask() {
-      const input = document.getElementById("taskInput");
-      const value = input.value.trim();
-      if (value === "") return;
-      const li = document.createElement("li");
-      li.innerHTML = `${value} <span class='remove' onclick='removeTask(this)'>&times;</span>`;
-      document.getElementById("taskList").appendChild(li);
-      input.value = "";
+      const text = taskInput.value.trim();
+      if (!text) return;
+      const tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+      tasks.push({ text, done: false });
+      localStorage.setItem("tasks", JSON.stringify(tasks));
+      taskInput.value = "";
+      renderTasks();
     }
 
-    function removeTask(el) {
-      el.parentElement.remove();
+    function deleteTask(index) {
+      const tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+      tasks.splice(index, 1);
+      localStorage.setItem("tasks", JSON.stringify(tasks));
+      renderTasks();
     }
 
-    updateDisplay();
+    function renderTasks() {
+      const tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+      taskTableBody.innerHTML = "";
+      tasks.forEach((task, index) => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${task.text}</td>
+          <td>${task.done ? '✅ Done' : '⏳ Pending'}</td>
+          <td><button onclick="deleteTask(${index})">❌</button></td>
+        `;
+        taskTableBody.appendChild(row);
+      });
+    }
+
+    document.getElementById("clearTasks").addEventListener("click", () => {
+      localStorage.removeItem("tasks");
+      taskTableBody.innerHTML = "";
+    });
+
+    document.getElementById("downloadTasks").addEventListener("click", () => {
+      const tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+      const csv = "data:text/csv;charset=utf-8," + tasks.map(t => t.text).join("\n");
+      const link = document.createElement("a");
+      link.setAttribute("href", encodeURI(csv));
+      link.setAttribute("download", "legal_tasks.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    });
+
+    // Load on page load
+    renderTasks();
+    displayTime();
   </script>
 </body>
 </html>
