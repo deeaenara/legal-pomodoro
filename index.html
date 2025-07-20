@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Legal Pomodoro - AWS Deep Sprint</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      text-align: center;
+      padding: 20px;
+      background: #f5f5f5;
+      color: #333;
+    }
+    .timer {
+      font-size: 60px;
+      margin: 30px 0;
+    }
+    button {
+      font-size: 18px;
+      padding: 10px 25px;
+      margin: 10px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    #start { background-color: #0d6efd; color: white; }
+    #pause { background-color: #ffc107; color: black; }
+    #reset { background-color: #dc3545; color: white; }
+    #toggleMode { background-color: #6c757d; color: white; }
+  </style>
+</head>
+<body>
+  <h2> Billable Sprint Mode</h2>
+  <div class="timer" id="timer">25:00</div>
+  <button id="start">Start Billable Sprint</button>
+  <button id="pause">Adjourn</button>
+  <button id="reset">Reset Docket</button>
+  <br>
+  <button id="toggleMode">Switch to 50/10</button>
+
+  <audio id="alarm">
+    <source src="https://www.soundjay.com/button/beep-07.wav" type="audio/wav">
+  </audio>
+
+  <script>
+    let seconds = 1500;
+    let interval = null;
+    let is50Mode = false;
+    const timerDisplay = document.getElementById("timer");
+    const alarm = document.getElementById("alarm");
+
+    function updateTimer() {
+      const mins = String(Math.floor(seconds / 60)).padStart(2, '0');
+      const secs = String(seconds % 60).padStart(2, '0');
+      timerDisplay.textContent = `${mins}:${secs}`;
+    }
+
+    function startTimer() {
+      if (interval) return;
+      interval = setInterval(() => {
+        if (seconds > 0) {
+          seconds--;
+          updateTimer();
+        } else {
+          clearInterval(interval);
+          interval = null;
+          alarm.play();
+          alert("⏰ Time's up! Take your legal recess");
+        }
+      }, 1000);
+    }
+
+    document.getElementById("start").onclick = startTimer;
+
+    document.getElementById("pause").onclick = () => {
+      clearInterval(interval);
+      interval = null;
+    };
+
+    document.getElementById("reset").onclick = () => {
+      clearInterval(interval);
+      interval = null;
+      seconds = is50Mode ? 3000 : 1500;
+      updateTimer();
+    };
+
+    document.getElementById("toggleMode").onclick = () => {
+      is50Mode = !is50Mode;
+      clearInterval(interval);
+      interval = null;
+      seconds = is50Mode ? 3000 : 1500;
+      document.querySelector("h2").innerText = is50Mode ? "Deep Focus Mode (50/10)" : "Billable Sprint Mode";
+      document.getElementById("toggleMode").textContent = is50Mode ? "Switch to 25/5" : "Switch to 50/10";
+      updateTimer();
+    };
+
+    updateTimer();
+  </script>
+</body>
+</html>
